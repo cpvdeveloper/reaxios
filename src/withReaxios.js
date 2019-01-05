@@ -1,4 +1,5 @@
-import { React, Component } from 'react';
+import React from 'react';
+import Reaxios from './index';
 
 const withReaxios = url => BaseComponent => props => (
     <Reaxios url={url}>

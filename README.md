@@ -1,77 +1,101 @@
 # reaxios
 
-## Basic usage
+## Basic usage as a component
+A request to the provided URL will be made once the Reaxios component is mounted, and it's child should be a function which will receive arguments describing the request - `response, isLoading, error`.    
 ```javascript
 <Reaxios url='https://localhost:3000/endpoint'>
   {
     ({ response, isLoading, error }) => {
-      // Some logic here if necessary 
-      <MyComponent
-        data={response}
-        isLoading={isLoading}
-        error={error}
-      />
+    
+      // Some logic here if necessary e.g. format the response data
+      
+      return (
+        <MyComponent
+          data={response}
+          isLoading={isLoading}
+          error={error}
+        />
+      )
   }
 </Reaxios>
 ```
 
+## useReaxios hook
+```js
+function ComponentUsingReaxios() {
+
+  const { response, isLoading, error } = useReaxios('http://localhost:5000/shops');
+
+  return (
+    <MyComponent
+      isLoading={isLoading}
+      options={response}
+      error={error}
+    />
+  );
+}
+```
+`useReaxios` takes additional, optional arguments: a second argument which is a function to format/modify the `response` data, and further arguments which will be used as arguments to this format function (the format function will always receive the response data itself as a first argument).    
+```js
+const format = {
+    fn: (responseData, attribute) => responseData.map(item => item[attribute]),
+    args: ['name'],
+};
+
+const { response, isLoading, error } = useReaxios('/endpoint', format.fn, ...format.args);
+```
+alternatively, provide just the `format` object as a second argument
+```js
+const { response, isLoading, error } = useReaxios('/endpoint', format);
+``` 
+
 ## withReaxios HOC usage
-Enhance a component with Reaxios:
-```javascript
+Enhance a component with Reaxios. The wrapped component will recieve `response, isLoading, error` props.
+```js
 const EnhancedComponent = withReaxios('http://localhost:3000/endpoint')(ComponentToEnhance);
 ```
-## Custom withReaxios HOC
-`dataLoadingProps` are mapped before being passed to the `BaseComponent`. 
+`withReaxios` also accepts further arguments which can be used to modify/format the response, as described above.
+## Reaxios as a basis for custom HOCs
+It's easy to create reusable, custom higher-order component from Reaxios - for example one that extends the functionality of the built-in `withReaxios` described above.   
 
-Take for example, a simple SelectDropdown component which is populated by the response to some async network request, and takes the following props for this:
-- `options`, a list of items to be shown in the Select dropdown, in a specific format (array of objects with value and label keys)
-- `loading`, a boolean to show if the request to get the options is loading
-- `error`, a boolean to show if there has been an error with the request to get options
+Take for example, a SelectDropdown component which is populated by the response to some async fetch. You may have many SelectDropdown components, all behaving exactly the same, but being populated by different data. It might be useful to create a HOC that tailors the Reaxios component to fit this SelectDropdown by:
+1. Formatting the response data
+2. Renaming the props
+3. Converting the error into a boolean value 
+4. Using a base URL such that only a path must be provided
 
-You may have many SelectDropdown components like this, all populated by different data/requests. A SelectDropdown-specific HOC is shown below, which can be used for each SelectDropdown given the correct URL and data format arguments (value and label).  
 ```javascript
-export const withReaxiosSelect = (url, value, label) => BaseSelectComponent => {
+export const withReaxiosSelect = path => BaseSelectComponent => props => {
+  const baseUrl = 'http:localhost:3000';
+  const fullUrl = `${baseUrl}/${path}`;
+
+  const formatFn = {
+    fn: (responseData, label, value) => responseData.map(item => ({
+      label: item[label],
+      value: item[value],
+    })),
+    args: ['name', '_id']
+  };
+
   return (
-    function(props) {
-      return (
-        <Reaxios url={url}>
-          {
-            ({ response, isLoading, error }) => {
-              const dataLoadingProps = {
-                response: response ? formatData(response, value, label) : undefined,
-                loading: isLoading,
-                error: !!error,
-              };
-              return <BaseSelectComponent {...dataLoadingProps} {...props} />
-            }
-          }
-        </Reaxios>
-      )
-    }
+    <Reaxios url={fullUrl}>
+      {
+        ({ response, isLoading, error }) => {
+        
+          const dataLoadingProps = {
+            response: response ? formatFn.fn(response, ...formatFn.args) : null,
+            loading: isLoading,
+            error: !!error,
+          };
+          
+          return <BaseSelectComponent {...dataLoadingProps} {...props} />
+        }
+      }
+    </Reaxios>
   )
 }
-
-// Formats the response data for the SelectDropdown component
-function formatData(rawData, value, label) {
-  return rawData.map(item => ({
-    value: item[value],
-    label: item[label],
-  }))
-}
-```
-
-```javascript
-<SelectDropdown
-  placeholder={placeholder}
-  value={value}
-  onChange={onChange}
-  multiple={multiple}
-  options={options}
-  loading={loading}
-  error={error}
-/>
-
-// Now given options, loading and error props
-export default withReaxiosSelect('http://localhost:3000/endpoint', '_id', 'name')(SelectDropdown);
+``` 
+```js
+export default withReaxiosSelect('endpoint-only')(SelectDropdown);
 ```
                      
