@@ -1,45 +1,9 @@
-import React from 'react';
-import PropTypes from 'prop-types';
-import axios from 'axios';
+import Reaxios from './Reaxios';
+import useReaxios from './useReaxios';
+import withReaxios from './withReaxios';
 
-class Reaxios extends React.PureComponent {
-    
-    constructor(props) {
-        super(props);
-        this.state = {
-            response: null,
-            isLoading: true,
-            error: null,
-        };
-    }
-
-    componentDidMount() {
-        this.makeRequest(this.props);
-    }
-
-    async makeRequest(props) {
-        try {
-            const res = await axios.get(props.url);
-            this.setState({
-                isLoading: false,
-                response: res.data,
-            });
-        } catch(error) {
-            this.setState({
-                error,
-                isLoading: false,
-            })
-        }
-    }
-
-    render() {
-        return this.props.children(this.state);
-    }
+export {
+    Reaxios,
+    useReaxios,
+    withReaxios,
 }
-
-Reaxios.propTypes = {
-    children: PropTypes.func,
-    url: PropTypes.string.isRequired,
-};
-
-export default Reaxios;
