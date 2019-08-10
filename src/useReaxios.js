@@ -11,26 +11,26 @@ function useReaxios(url, formatFn = null) {
 
     const makeRequest = async url => {
 
-        setDataLoadingProps({
+        setDataLoadingProps(prevState => ({
             ...dataLoadingProps,
             isLoading: true
-        });
+        }));
 
         try {
             const res = await axios.get(url);
-            setDataLoadingProps({
+            setDataLoadingProps(prevState => ({
                 ...dataLoadingProps,
                 isLoading: false,
                 response: formatFn ? (
                     res && formatFn.fn(res.data, ...formatFn.args) 
                 ) : res.data,
-            });
+            }));
         } catch(error) {
-            setDataLoadingProps({
+            setDataLoadingProps(prevState => ({
                 ...dataLoadingProps,
                 error,
                 isLoading: false,
-            })
+            }));
         }
     }
 
@@ -42,4 +42,3 @@ function useReaxios(url, formatFn = null) {
 }
 
 export default useReaxios;
-
