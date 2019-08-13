@@ -14,12 +14,12 @@ class Reaxios extends React.PureComponent {
     }
 
     componentDidMount() {
-        this.makeRequest(this.props);
+        this.makeRequest();
     }
 
-    async makeRequest(props) {
+    async makeRequest() {
         try {
-            const res = await axios.get(props.url);
+            const res = await axios.get(this.props.url);
             this.setState({
                 isLoading: false,
                 response: res.data,
